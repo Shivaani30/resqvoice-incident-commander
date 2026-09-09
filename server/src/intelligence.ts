@@ -37,8 +37,8 @@ function actionSummary(text: string) {
 }
 type MetricChange = { previous?: number; current: number; direction?: 'increase' | 'decrease' };
 function metricChange(text: string, unitPattern: string): MetricChange | undefined {
-  const fromTo = text.match(new RegExp(`\\b(\\d+(?:\\.\\d+)?)\\s*${unitPattern}\\s+to\\s+(\\d+(?:\\.\\d+)?)\\s*${unitPattern}\\b`));
-  const single = text.match(new RegExp(`\\b(?:to|at)\\s+(\\d+(?:\\.\\d+)?)\\s*${unitPattern}\\b`));
+  const fromTo = text.match(new RegExp(`\\b(\\d+(?:\\.\\d+)?)\\s*(?:${unitPattern})\\s+to\\s+(\\d+(?:\\.\\d+)?)\\s*(?:${unitPattern})\\b`));
+  const single = text.match(new RegExp(`\\b(?:to|at)\\s+(\\d+(?:\\.\\d+)?)\\s*(?:${unitPattern})\\b`));
   const direction = /\b(?:decreased|dropped|fallen|fell|improved|reduced)\b/.test(text) ? 'decrease' : /\b(?:increased|rose|jumped)\b/.test(text) ? 'increase' : undefined;
   if (fromTo) return { previous: Number(fromTo[1]), current: Number(fromTo[2]), direction };
   if (single) return { current: Number(single[1]), direction };

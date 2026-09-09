@@ -3,6 +3,8 @@ import cors from 'cors'
 import express from 'express'
 import { command, getSession, interrupt } from './engine.js'
 import { cancelTts, getRimeValidation, synthesize } from './tts.js'
+import { answerWithLLM, classifyRoute } from './qa.js'
+import { isLLMConfigured } from './llm.js'
 
 dotenv.config({ path: new URL('../../.env', import.meta.url) })
 
@@ -12,6 +14,7 @@ app.use(express.json({ limit: '32kb' }))
 
 app.get('/health', (_request, response) => response.json({ status: 'ok', rimeConfigured: getRimeValidation().configured, speechRecognition: 'browser', incidentEngine: 'deterministic', voiceTransport: 'browser-direct', rime: getRimeValidation() }))
 app.get('/api/rime/validate', (_request, response) => response.json(getRimeValidation()))
+app.post('/api/ai/answer', async (request, response) => { const body = request.body ?? {}; const sessionId = String(body.sessionId ?? 'demo'); const question = String(body.question ?? ''); if (!question.trim()) return response.status(400).json({ answer: 'A question is required.', grounded: true }); const session = getSession(sessionId); try { const result = await answerWithLLM(question, session.intelligence, null, session.turns.slice(-8).map(turn => ({ role: turn.role, text: turn.text })), undefined, classifyRoute(question) === 'GENERAL_KNOWLEDGE'); response.json({ ...result, grounded: result.usesIncidentState }); } catch { response.status(503).json({ answer: 'The answer request was cancelled or unavailable.', grounded: false }); } })
 app.post('/api/commands', async (request, response) => {
   const body = request.body ?? {}
   cancelTts(body.sessionId ?? 'demo')
@@ -43,4 +46,4 @@ app.post('/api/tts', async (request, response) => {
 })
 
 const port = Number(process.env.PORT || 3001)
-app.listen(port, () => { console.log(`IncidentVoice API listening on http://localhost:${port}`); console.log(`Rime: ${getRimeValidation().configured ? 'configured' : 'not configured'}`) })
+app.listen(port, () => { console.log(`IncidentVoice API listening on http://localhost:${port}`); console.log(`Rime: ${getRimeValidation().configured ? 'configured' : 'not configured'}`); console.log(`LLM: ${isLLMConfigured() ? 'configured' : 'not configured'}`) })

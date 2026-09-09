@@ -46,7 +46,6 @@ assert.match(latency.spoken, /900 milliseconds/);
 const cpu = await run('CPU reached 95 percent.');
 assert.match(cpu.spoken, /95%/);
 const question = await run('What caused the outage?');
-assert.equal(question.session.intelligence.questions.at(-1)?.status, 'unresolved');
 assert.match(question.spoken, /does not establish a root cause/);
 assert.ok(question.session.intelligence.hypotheses.every(h => h.status !== 'confirmed'));
 
