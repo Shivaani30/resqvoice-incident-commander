@@ -37,7 +37,7 @@ RIME_ENDPOINT=https://users.rime.ai/v1/rime-tts
 MOCK_TTS=false
 ```
 
-Never put the key in a VITE_ variable. Restart the backend after changing `.env`. The dotenv path resolves to the project root in both development and the compiled server. Vite proxies `/api` and `/health` to port 3001; a production frontend host must provide equivalent routing.
+Never put the key in a VITE\_ variable. Restart the backend after changing `.env`. The dotenv path resolves to the project root in both development and the compiled server. Vite proxies `/api` and `/health` to port 3001; a production frontend host must provide equivalent routing.
 
 `GET /health` reports `rimeConfigured`, `speechRecognition: "browser"`, `incidentEngine: "deterministic"`, and `voiceTransport: "browser-direct"`. Configured means required values are present, not that a paid-provider request has succeeded. `/api/rime/validate` provides configuration status; `/api/tts` generates real Rime audio. Demo Mode is local historical data, not a live audio test. Keep MOCK_TTS=false for real Rime output; no substitute speech provider is implemented.
 
