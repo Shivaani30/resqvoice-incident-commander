@@ -1,0 +1,12 @@
+.env
+node_modules/
+client/dist/
+server/dist/
+*.log
+
+# Local Codex backups and temporary artifacts
+backup-before-*/
+debug-backup-*/
+ui-backup-*/
+output/
+tmp/

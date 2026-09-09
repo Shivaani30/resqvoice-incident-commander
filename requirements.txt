@@ -1,0 +1,39 @@
+# IncidentVoice Commander prerequisites
+#
+# This is a Node.js/TypeScript project. This file is documentation for reviewers;
+# npm installs the pinned dependency graph from package-lock.json.
+#
+# Install runtime prerequisites:
+#   Node.js >= 22
+#   npm >= 11
+#
+# Install every client/server package from the repository root:
+#   npm install
+#
+# Root tooling
+concurrently@^9.1.2
+
+# Client runtime
+react@^19.1.1
+react-dom@^19.1.1
+
+# Client build tooling
+@tailwindcss/vite@^4.1.12
+@types/react@^19.1.10
+@types/react-dom@^19.1.7
+tailwindcss@^4.1.12
+typescript@~6.0.2
+vite@^8.2.2
+
+# Server runtime
+cors@^2.8.5
+dotenv@^17.4.2
+express@^5.1.0
+
+# Server build tooling
+@types/cors@^2.8.19
+@types/express@^5.0.1
+tsx@^4.20.3
+typescript@^5.8.3
+
+# No Python packages are required. Do not run pip install -r requirements.txt.

@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import { synthesize, cancelTts } from '../server/src/tts.ts';
+import { command, interrupt } from '../server/src/engine.ts';
+
+Object.assign(process.env, { RIME_API_KEY: 'synthetic-test-only', RIME_MODEL_ID: 'mistv2', RIME_VOICE: 'astra', RIME_LANGUAGE: 'eng', RIME_ENDPOINT: 'https://example.invalid/tts', MOCK_TTS: 'false' });
+const sessionId = 'rime-cancellation-test';
+let mode: 'ok' | 'pending' | 'body' = 'ok';
+let upstreamSignal: AbortSignal | undefined;
+let releaseBody: (() => void) | undefined;
+globalThis.fetch = (async (_input, options) => {
+  upstreamSignal = options!.signal as AbortSignal;
+  const body = JSON.parse(String(options!.body));
+  assert.equal(body.modelId, 'mistv2'); assert.equal(body.speaker, 'astra'); assert.equal(body.lang, 'eng');
+  if (mode === 'pending') return await new Promise((_resolve, reject) => upstreamSignal!.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true }));
+  if (mode === 'body') return { ok: true, arrayBuffer: () => new Promise<ArrayBuffer>(resolve => { releaseBody = () => resolve(new ArrayBuffer(4)); }) } as Response;
+  return new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'audio/mpeg' } });
+}) as typeof fetch;
+const first = await command(sessionId, 'first', 'Create a P1 incident for checkout failures.');
+const realPath = await synthesize('test', sessionId, first.generationId);
+assert.equal(realPath.audio.length, 3); assert.equal(realPath.metadata.provider, 'Rime');
+mode = 'pending';
+const incoming = new AbortController();
+const disconnected = synthesize('test', sessionId, first.generationId, incoming.signal);
+incoming.abort(); await assert.rejects(disconnected, /Stale generation/); assert.equal(upstreamSignal?.aborted, true);
+const cancelled = synthesize('test', sessionId, first.generationId);
+cancelTts(sessionId); await assert.rejects(cancelled, /Stale generation/);
+mode = 'body';
+const late = synthesize('test', sessionId, first.generationId);
+await new Promise(resolve => setTimeout(resolve, 0));
+interrupt(sessionId); releaseBody!(); await assert.rejects(late, /Stale generation/);
+await assert.rejects(synthesize('stale', sessionId, first.generationId), /Stale generation/);
+console.log('PASS: Rime request format, client-disconnect abort, explicit cancellation, body-completion fence, stale-generation rejection');

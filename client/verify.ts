@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import { demoSnapshot, demoLength } from './src/demo/demoIncident.ts';
+import { generateSummary } from './src/lib/summary.ts';
+import { liveIntelligence } from './src/lib/model.ts';
+import { testStaleMockAudio } from './src/audioPlaybackManager.test.ts';
+const first = demoSnapshot(0), full = demoSnapshot(demoLength);
+assert.equal(first.session.turns.length, 0);
+assert.equal(first.intelligence.facts.length, 0);
+assert.equal(full.session.turns.length, 9);
+assert.equal(full.intelligence.conflicts.length, 1);
+assert.equal(full.intelligence.hypotheses.find(h => h.id === 'h1')?.status, 'unconfirmed');
+assert.equal(demoSnapshot(5).intelligence.conflicts.length, 0);
+assert.equal(demoSnapshot(6).intelligence.conflicts.length, 1);
+const summary = generateSummary(full.session, full.intelligence, true);
+for (const title of ['Incident Summary', 'Executive Summary', 'Established Information', 'Active Hypotheses', 'Open Questions', 'Actions', 'Decisions', 'Evidence / Corroboration', 'Contradictions / Disputed Claims', 'Timeline', 'Current Incident State', 'Transcript Snapshot'])
+    assert.ok(summary.includes('# ' + title), title);
+assert.ok(summary.includes('Root cause remains unconfirmed.'));
+assert.ok(summary.includes('DEMO DATA'));
+assert.ok(summary.includes('INC-2047'));
+const live = liveIntelligence({ generationId: 0, incident: null, turns: [], events: [] });
+assert.equal(live.facts.length, 0);
+assert.equal(live.participants.length, 0);
+assert.equal(live.hypotheses.length, 0);
+assert.ok(!generateSummary(first.session, live, false).includes('DEMO DATA'));
+assert.ok(await testStaleMockAudio());
+console.log('PASS: demo progression/reset snapshots, uncertainty, summary sections, live isolation, stale audio fence');
