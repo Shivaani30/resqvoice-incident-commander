@@ -1,4 +1,4 @@
-import type { Claim, Intelligence } from './intelligence.js';
+﻿import type { Claim, Intelligence } from './intelligence.js';
 import { createLLMProvider, type LLMResponse } from './llm.js';
 
 export type Route = 'CLARIFICATION_RESPONSE' | 'STATUS_COMMAND' | 'STATUS_CLARIFICATION' | 'DECISION' | 'ACTION' | 'STATE_QUERY' | 'INCIDENT_ANALYSIS' | 'GENERAL_KNOWLEDGE' | 'INCIDENT_STATEMENT' | 'UNKNOWN';
@@ -11,6 +11,13 @@ export function classifyRoute(text: string): Route {
   if (/^(approve|approved|proceed|declare)\b.*\b(?:rollback|incident|p[123])\b|\bwe (?:will|decided to) rollback\b/.test(value)) return 'DECISION';
   if (/\b(?:do not|don't) (?:declare|mark) (?:the )?incident resolved\b|^(?:mark|resolve) (?:the )?incident resolved\b|^the incident (?:is )?resolved\b|^yes,?\s*(?:mark|resolve) (?:the )?incident resolved\b/.test(value)) return 'STATUS_COMMAND';
   const question = /\?$/.test(value) || /^(what|why|which|how|is|are|could|can|does|did|should we|so|explain|define|meaning of)\b/.test(value);
+  // Requests can be imperatives or fragments; recognize their structure before action keywords.
+  const requestText = value.replace(/^resqvoice\s*[,.:]?\s*/, '').trim();
+  if (/^(?:investigate|check|monitor|inspect|verify)\b/.test(requestText) || /^prepare\s+(?:the\s+)?rollback\b/.test(requestText)) return 'ACTION';
+  const requestSignal = /^(?:brief|summari[sz]e|assess|analyse|analyze|compare|prioriti[sz]e|recommend|suggest|identify|evaluate|review|reassess|challenge|critique|rank|list|describe|tell me|give me|show me|walk me through|bring me up to speed|catch me up|prepare (?:a |an )?(?:concise )?(?:incident )?(?:commander )?brief(?:ing)?|prepare (?:a |an )?(?:concise )?handoff|separate (?:the )?(?:confirmed )?facts? from (?:the )?assumptions?)/.test(requestText)
+    || /\b(?:your assessment|current (?:incident )?summary|most likely cause|what should we|what evidence (?:would|could)\b|recommend what|assess whether|explain why|does the (?:current )?evidence)\b/.test(requestText);
+  if (requestSignal) return 'INCIDENT_ANALYSIS';
+  if (!/\?$/.test(value) && /\b(?:deployment|gateway|payment gateway)\b.*\b(?:definitely|certainly|clearly)\b.*\b(?:caused|root cause)\b/.test(value)) return 'INCIDENT_STATEMENT';
   if (/\b(?:what do we know|what is known|what (?:do we )?still not know|what don't we know|what do we not know|what is unknown|what is unresolved|what are the open questions|what hypotheses? (?:are )?(?:active|disputed)|what actions? (?:are pending|do we have)|what decisions? (?:have been made|did we make)|what evidence (?:do we have|establishes? the root cause)|what contradictions?|what caused? the (?:outage|incident)|what is the root cause|what is the incident status|is .* root cause|does .* prove|is the incident (?:resolved|closed)|(?:deployment|gateway) .*definitely .*caused)\b/.test(value)) return 'STATE_QUERY';
   const analysisSignal = /\b(?:give me (?:your )?assessment|assessment of|assess|most likely cause|what should we|what do you think|recommend|based on the evidence|given the evidence|explain the incident|how has the .* evidence changed)\b/.test(value);
   if (analysisSignal) return 'INCIDENT_ANALYSIS';
